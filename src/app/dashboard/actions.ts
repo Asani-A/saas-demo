@@ -28,11 +28,62 @@ export async function createTask(formData: FormData) {
   
   await Task.create({
     ...validatedData,
-    assignedTo: (session.user).id, 
+    assignedTo: session.user.id, 
     // We need a dummy project ID for now since our Schema requires it
     // In a real app, you'd select the project from the UI
-    project: (session.user).id // Temporary: assigning project to user ID just to satisfy Schema
-  });
+      });
 
   revalidatePath("/dashboard"); 
+}
+
+export async function updateTaskDetails(taskId: string, formData: FormData) {
+  const session = await getServerSession();
+  if (!session || !session.user) throw new Error("Unauthorized");
+
+  const rawData = {
+    title: formData.get("title"),
+    description: formData.get("description"),
+    priority: formData.get("priority"),
+  };
+
+  // Reuse the existing Zod schema for validation
+  const validatedData = TaskSchema.parse(rawData);
+
+  await connectDB();
+
+  await Task.updateOne(
+    { _id: taskId, assignedTo: session.user.id },
+    { $set: validatedData }
+  );
+
+  revalidatePath("/dashboard");
+}
+
+export async function deleteTask(taskId: string) {
+  const session = await getServerSession();
+  if (!session || !session.user) throw new Error("Unauthorized");
+
+  await connectDB();
+
+  // Security: Ensure the user can only delete THEIR OWN task
+  await Task.deleteOne({
+    _id: taskId,
+    assignedTo: session.user.id
+  });
+
+  revalidatePath("/dashboard");
+}
+
+export async function updateTaskStatus(taskId: string, newStatus: string) {
+  const session = await getServerSession();
+  if (!session || !session.user) throw new Error("Unauthorized");
+
+  await connectDB();
+
+  await Task.updateOne(
+    { _id: taskId, assignedTo: session.user.id },
+    { status: newStatus }
+  );
+
+  revalidatePath("/dashboard");
 }

@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 
 const handler = NextAuth({
+  debug: true,
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID!,
@@ -11,29 +12,40 @@ const handler = NextAuth({
     }),
   ],
   callbacks: {
-    async signIn({  }) {
-      await connectDB();
-      const existingUser = await User.findOne({ email: user.email });
-      
-      if (!existingUser) {
-        await User.create({
-          name: user.name,
-          email: user.email,
-          image: user.image,
-          role: 'user',
-        });
+    async signIn({ user }) {
+      try {
+        await connectDB();
+        const existingUser = await User.findOne({ email: user.email });
+        
+        if (!existingUser) {
+          await User.create({
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            role: 'user',
+          });
+        }
+        return true;
+      } catch (error) {
+        console.error("❌ SIGNIN ERROR:", error);
+        return false;
       }
-      return true;
-    },
+    }, // <--- This comma was likely missing or misplaced
+
     async session({ session }) {
-      // Attach user role/ID to the session so it's available in the frontend
-      await connectDB();
-      const dbUser = await User.findOne({ email: session.user?.email });
-      if (dbUser && session.user) {
-        (session.user).id = dbUser._id;
-        (session.user).role = dbUser.role;
+      try {
+        await connectDB();
+        const dbUser = await User.findOne({ email: session.user?.email });
+        
+        if (dbUser && session.user) {
+          session.user.id = dbUser._id.toString();
+          session.user.role = dbUser.role;
+        }
+        return session;
+      } catch (error) {
+        console.error("❌ SESSION ERROR:", error);
+        return session;
       }
-      return session;
     },
   },
 });

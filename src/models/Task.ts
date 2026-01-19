@@ -24,7 +24,7 @@ const TaskSchema = new Schema<ITask>({
     default: 'MEDIUM' 
   },
   assignedTo: { type: Schema.Types.ObjectId, ref: 'User' },
-  project: { type: Schema.Types.ObjectId, ref: 'Project', required: true }
+  project: { type: Schema.Types.ObjectId, ref: 'Project', }
 }, { timestamps: true });
 
 export default mongoose.models.Task || mongoose.model<ITask>('Task', TaskSchema);

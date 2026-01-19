@@ -24,15 +24,15 @@ import {
 } from "@/components/ui/select";
 import { z } from "zod";
 
+type TaskFormData = z.infer<typeof TaskSchema>;
+
 interface TaskProps {
   _id: string;
   title: string;
   description?: string;
-  priority: string; // Or "LOW" | "MEDIUM" | "HIGH" if you want to be stricter
+  priority: string;
   status: string;
 }
-
-type TaskFormData = z.infer<typeof TaskSchema>;
 
 export function EditTaskDialog({ task, children }: { task: TaskProps; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -41,7 +41,8 @@ export function EditTaskDialog({ task, children }: { task: TaskProps; children: 
     defaultValues: {
       title: task.title,
       description: task.description,
-      priority: task.priority,
+      // FIX: Cast the string to the specific union type
+      priority: task.priority as "LOW" | "MEDIUM" | "HIGH",
     },
   });
 
@@ -52,7 +53,7 @@ export function EditTaskDialog({ task, children }: { task: TaskProps; children: 
     formData.append("priority", data.priority || "MEDIUM");
 
     await updateTaskDetails(task._id, formData);
-    setOpen(false); // Close dialog on success
+    setOpen(false); 
   };
 
   return (
